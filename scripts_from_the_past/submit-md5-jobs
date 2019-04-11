@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+
+BATCH_FILE_PATH="$1"  # Example: Sarcoidosis_batch02_2016-02-05_md5_a
+DST="$2"  # Directory where all results will go
+PROJECT_CODE="$3" #proj-dm0019
+# Example batch file:
+# msub-md5 'NWD414772-HK2HCCCXX-1.hgv.bam' '/stornext/snfs120/next-gen/Illumina/Instruments/E00212/160109_ST-E00212_0182_AHK2HCCCXX/Results/Project_160109_ST-E00212_0182_AHK2HCCCXX/Sample_HK2HCCCXX-1/HK2HCCCXX-1.hgv.bam'
+# msub-md5 'NWD520478-HK2HCCCXX-2.hgv.bam' '/stornext/snfs120/next-gen/Illumina/Instruments/E00212/160109_ST-E00212_0182_AHK2HCCCXX/Results/Project_160109_ST-E00212_0182_AHK2HCCCXX/Sample_HK2HCCCXX-2/HK2HCCCXX-2.hgv.bam'
+
+# Can override in $(pwd)/topmed_msub_init.sh or prepend to batch file:
+JOB_BATCH_NAME=$(basename "$BATCH_FILE_PATH")
+BATCH_SUFFIX=$(echo "$JOB_BATCH_NAME"_ | cut -d_ -f5 | cut -c1)
+#PROJECT_CODE=proj-dm0019
+QUEUE=normal  # or "analysis" for long jobs `three_hours` for short jobs
+RESOURCES=nodes=1:ppn=1,mem=10mb,walltime=35:00:00
+
+err() { echo "$@" >&2; }
+
+if [ "$#" -ne 3 ]; then
+    err 'Usage:'
+    err "$0 BATCH_FILE DESTINATION_DIR proj_code"
+    err
+    exit 1
+fi
+
+msub-md5() {
+    NEW_NAME="$1"
+    SRC="$2"
+    command="/hgsc_software/submissions/bin/named-md5 '$SRC' '$NEW_NAME'"
+    JOB_NAME=md5"$BATCH_SUFFIX"-"$NEW_NAME"
+    MSUB_OPTS="-q $QUEUE -A $PROJECT_CODE -l $RESOURCES -j oe"
+    echo $NEW_NAME | tr \\n \\t
+    echo $command |
+        msub $MSUB_OPTS -d "$DST" -o "$NEW_NAME".out -N $JOB_NAME |
+        sed '1s/.sug-moab$//'
+}
+
+# Allow for customization, such as during testing.
+if [ -f topmed_msub_init.sh ]; then
+    err 'loading topmed_msub_init.sh'
+    . topmed_msub_init.sh
+fi
+
+##################################################
+# Now this script starts doing things to the OS...
+##################################################
+
+mkdir -p "$DST"
+DST="$(cd "$DST"; pwd)"
+err DST: $DST
+
+(. "$BATCH_FILE_PATH") | tee "$DST/$JOB_BATCH_NAME"_jobs.txt | cat -n

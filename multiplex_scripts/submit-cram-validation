@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+
+DEFAULT_INIT_SCRIPT='submit-validation-init.sh'
+DEFAULT_MEM=15gb
+DEFAULT_WALLTIME=24:00:00
+
+usage() {
+   err "usage: $(basename "$0") DST_DIR BAM_PATH [PROJECT_CODE] [QUEUE]"
+   err "    Submit validation job."
+   err "    DST_DIR: output & working directory"
+   err
+   err "Environment:"
+   err "    SUBMIT_VALIDATION_INIT: default ($DEFAULT_INIT_SCRIPT) sourced at"
+   err "        end of variable initialization"
+   err "    MEM: default ($DEFAULT_MEM)"
+   err "    WALLTIME: default ($DEFAULT_WALLTIME)"
+   exit 1
+} >&2
+
+err() { echo "$@" >&2; }
+
+if [[ $# -lt 2 ]] || [[ $# -gt 4 ]]; then
+   usage
+fi
+
+dst_dir=$(readlink -m "$1")
+cram_path=$(python3 -c "import os; print(os.path.abspath('$2'))")
+project_code_code="$3")
+#project_code=${3:-proj-dm0019}  # TODO: handle default outside of script
+queue=${4:-analysis}  # for long jobs
+
+MEM=${MEM:-$DEFAULT_MEM}
+WALLTIME=${WALLTIME:-$DEFAULT_WALLTIME}
+
+JAVA='/hgsc_software/java/jdk1.8.0_74/bin/java'
+JAR='/hgsc_software/picard/picard-tools-2.6.0/picard.jar'
+VALIDATE_ARGS='ValidateSamFile'
+TIME_FMT='cmd: %C\nerr: %x\nsecs: %e\nproc: %P\nkb: %M'
+REFERENCE='/stornext/snfs1/submissions/resources/referneces/GRCh38.fa'
+resources=nodes=1:ppn=1,mem=$MEM,walltime=$WALLTIME
+msub_opts="-q $queue -A $project_code -l $resources"
+out_name=$(basename "$cram_path")
+job_name="$out_name.val"
+
+# Allow for customization, such as during testing.
+INIT_SCRIPT=${SUBMIT_VALIDATION_INIT:-"$DEFAULT_INIT_SCRIPT"}
+if [[ -f "$INIT_SCRIPT" ]]; then
+    err "loading $INIT_SCRIPT"
+    . "$INIT_SCRIPT"
+fi
+
+mkdir -p "$dst_dir"
+
+command="/usr/bin/time -f'$TIME_FMT' -o '$job_name.time' '$JAVA' -jar '$JAR' $VALIDATE_ARGS I='$cram_path' R='$REFERENCE' IGNORE=MISSING_TAG_NM "
+echo $command |
+    msub $msub_opts -N "$job_name" -d "$dst_dir" -o "$job_name".out -e "$job_name".err |
+    sed '1s/.sug-moab$//' |
+    tee -a "$dst_dir"/"$job_name".job

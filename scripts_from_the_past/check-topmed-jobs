@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+batch_name="$1"
+
+cut -f2 "$batch_name"_md5_jobs.txt |
+   xargs -n1 checkjob -v >"$batch_name".checkjob
+
+(
+   echo '<checkjob>'
+   cut -f2 "$batch_name"_md5_jobs.txt | xargs -n1 checkjob -v --xml
+   echo
+   echo '</checkjob>'
+) >"$batch_name".checkjob.xml

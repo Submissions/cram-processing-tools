@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+# Create a .md5 file with the specified name for the source file.
+
+SRC="$1"
+DST="$2"
+
+DST_DIR=$(dirname "$DST")
+DST_NAME=$(basename "$DST")
+
+mkdir -p "$DST_DIR"
+md5sum <"$SRC" | sed "s/-/$DST_NAME/" >"$DST".md5
