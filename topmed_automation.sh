@@ -57,29 +57,17 @@ if [ $? != 0 ]; then
     exit 1
 fi
 
-pushd .
-
 # Change to working directory
 cd $SUB_ROOT/$SUB_PATH
 
-# Copy TSV to file groups submissions directory
-TSV_FILE=$(find $PM_PATH -name '*.tsv')
-cp $TSV_FILE .
-
-
-# Assign workbook and check that the name is valid
+# Assign workbook
 workbook=$(ls -t *_batch???_mplx.tsv | head -n1)
-if [[ $workbook =~ ' ' ]]; then
-    echo 'ERROR: There is a space in the name of the workbook!!!'
-    echo 'These steps will FAIL!'
-    exit 1
-fi
 
 # Assign batch name
 batch_name=$(echo $workbook | sed -e s/_mplx.tsv$//)
 
 # Run scripts to generate the copy script and md5_worklist
-stornext_path=/Users/marcelat/Projects/madeup
+stornext_path=/stornext/snfs1/submissions/topmed/topmed-code/topmed_multiplex_code
 $stornext_path/generate-topmed-copy-script-tsv $workbook
 echo "Generated copy script"
 $stornext_path/generate-topmed-md5-worklist-tsv $workbook
@@ -101,7 +89,31 @@ unset ECHO
 . ../${batch_name}_val
 echo "Successfully created symlinks"
 
-popd
+##################################
+# Submit md5 jobs to the cluster #
+##################################
 
-# If everything is successful, temporarily create file
-touch topmed_status_good
+submit_md5_jobs=/hgsc_software/submissions/noarch/apps/topmed-code/submit-md5-jobs
+md5_file_path="$batch_name"_md5
+tmux send-keys -t topmed-login "ssh sug-login4" C-m
+tmux send-keys -t topmed-login "cd $SUB_ROOT/$SUB_PATH" C-m
+# This is assuming user doesnt have to enter a password
+# Should prob clarify, it's easier
+tmux send-keys -t topmed-login "$submit_md5_jobs $md5_file_path md5/ $PM_CODE" C-m
+
+# Run the validation
+submit-cram-validation_phase5=/hgsc_software/groups/submissions/metadata/v1/topmed/topmed/YR3/scripts_mr/submit-cram-validation_phase5
+tmux send-keys -t topmed-login "cd validation/" C-m
+tmux send-keys -t topmed-login "ls input/NWD* | xargs -n1 $submit-cram-validation_phase5 run_a" C-m
+
+echo "Validation is running, check validation once completed!"
+
+##############
+# Copy Crams #
+##############
+tmux send-keys -t topmed-copy "ssh sug-gp-cpa1" C-m
+tmux send-keys -t topmed-copy "cd $SUB_ROOT/$SUB_PATH" C-m
+copy_script="$batch_name".sh
+tmux send-keys -t topmed-copy "./$copy_script $ASP_ROOT" C-m
+
+echo "Copying crams to $ASP_ROOT"
