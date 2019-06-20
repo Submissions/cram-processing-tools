@@ -3,8 +3,51 @@
 PM_CODE=$1
 PM_PATH=$2
 
+SUB_ROOT=/groups/submissions/metadata/v1/topmed
+SUB_PATH=${PM_PATH:35}
 
-# Path to accept_batch script
+ASP_ROOT=/aspera/share/globusupload/submissions
+###############
+# Function(s) #
+###############
+tmux_session_exist () {
+    if [ $? != 0 ]; then
+        echo "ERROR: tmux session already exist."
+        echo "Make sure to exit previous sessions before continuing"
+        exit 1
+    fi
+}
+
+
+#########
+# Setup #
+#########
+
+# TODO: Aspera space issue.
+# Remind user?
+
+# Check if shepherd config file exist
+
+CONFIG_FILE=/users/$USER/.config/shepherd.yaml
+
+if [ ! -f $CONFIG_FILE ]; then
+    cat << EOF > $CONFIG_FILE
+sub_root: $SUB_ROOT
+asp_root: $ASP_ROOT
+EOF
+fi
+
+# Check if tmux sessions exist
+tmux new -s topmed-copy -d
+tmux_session_exist
+tmux new -s topmed-login -d
+tmux_session_exist
+
+
+#########################################
+# Run accept_batch script from Shepherd #
+#########################################
+
 ACCEPT_BATCH_PATH=/hgsc_software/submissions/bin/accept_batch
 
 $ACCEPT_BATCH_PATH $PM_PATH
