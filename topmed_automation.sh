@@ -1,15 +1,13 @@
 #!/bin/bash
 
-PM_PATH=$1
-SUB_ROOT=$2
-SUB_PATH=$3
+PM_CODE=$1
+PM_PATH=$2
 
 
 # Path to accept_batch script
 ACCEPT_BATCH_PATH=/hgsc_software/submissions/bin/accept_batch
 
-## Run accept_batch
-$ACCEPT_BATCH_PATH $1
+$ACCEPT_BATCH_PATH $PM_PATH
 if [ $? != 0 ]; then
     echo "WARNING: accept_batch encountered errors."
     echo "ERROR: Stopping the pipeline."
