@@ -4,7 +4,7 @@ PM_CODE=$1
 PM_PATH=$2
 
 SUB_ROOT=/groups/submissions/metadata/v1/topmed
-SUB_PATH=${PM_PATH:35}
+SUB_PATH=${PM_PATH:56}
 
 ASP_ROOT=/aspera/share/globusupload/submissions
 ###############
