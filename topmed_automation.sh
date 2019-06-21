@@ -7,6 +7,20 @@ SUB_ROOT=/groups/submissions/metadata/v1/topmed
 SUB_PATH=${PM_PATH:56}
 
 ASP_ROOT=/aspera/share/globusupload/submissions
+
+#########
+# Usage #
+#########
+usage() {
+   err "usage: $(basename "$0") PM_CODE PM_PATH"
+   err "    Run TOPmed automation for validation and copy steps."
+   err "    PM_CODE: code provided by the project manager"
+   err "    PM_PATH: path provided by the project manager"
+   err
+   exit 1
+} >&2
+
+
 ###############
 # Function(s) #
 ###############
