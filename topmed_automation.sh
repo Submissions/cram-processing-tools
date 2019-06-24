@@ -20,6 +20,11 @@ usage() {
    exit 1
 } >&2
 
+err() { echo "$@" >&2; }
+
+if [[ $# -ne 2 ]]; then
+   usage
+fi
 
 ###############
 # Function(s) #
