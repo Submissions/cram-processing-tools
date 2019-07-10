@@ -57,10 +57,11 @@ EOF
 fi
 
 # Check if tmux sessions exist
-tmux new -s topmed-copy -d
-tmux_session_exist
+# tmux new -s topmed-copy -d
+# tmux_session_exist
 tmux new -s topmed-login -d
 tmux_session_exist
+echo "Created topmed-login session"
 
 
 #########################################
@@ -125,14 +126,4 @@ submit-cram-validation_phase5=/hgsc_software/groups/submissions/metadata/v1/topm
 tmux send-keys -t topmed-login "cd validation/" C-m
 tmux send-keys -t topmed-login "ls input/NWD* | xargs -n1 $submit-cram-validation_phase5 run_a" C-m
 
-echo "Validation is running, check validation once completed!"
-
-##############
-# Copy Crams #
-##############
-tmux send-keys -t topmed-copy "ssh sug-gp-cpa1" C-m
-tmux send-keys -t topmed-copy "cd $SUB_ROOT/$SUB_PATH" C-m
-copy_script="$batch_name".sh
-tmux send-keys -t topmed-copy "./$copy_script $ASP_ROOT" C-m
-
-echo "Copying crams to $ASP_ROOT"
+echo "Validation is running, check validation in tmux session topmed-login once completed!"
